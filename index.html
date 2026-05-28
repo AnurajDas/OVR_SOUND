@@ -1,0 +1,891 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OVRSOUND — Headphones That Break Reality</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Mono:ital,wght@0,300;0,400;0,500;1,400&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --black:#000;
+  --white:#fff;
+  --red:#FF2200;
+  --green:#00FF88;
+  --pink:#FF00CC;
+  --yellow:#FFE100;
+  --cyan:#00EEFF;
+}
+html{scroll-behavior:smooth}
+body{
+  background:var(--black);
+  color:var(--white);
+  font-family:'DM Mono',monospace;
+  cursor:none;
+  overflow-x:hidden;
+}
+
+/* CUSTOM CURSOR */
+#cursor{position:fixed;width:16px;height:16px;background:var(--green);border-radius:50%;pointer-events:none;z-index:9999;transform:translate(-50%,-50%);mix-blend-mode:exclusion;transition:transform 0.1s,width 0.2s,height 0.2s,background 0.2s}
+#cursor-trail{position:fixed;width:40px;height:40px;border:1.5px solid var(--yellow);border-radius:50%;pointer-events:none;z-index:9998;transform:translate(-50%,-50%);mix-blend-mode:exclusion;transition:left 0.15s ease,top 0.15s ease,transform 0.2s,opacity 0.2s}
+body:hover #cursor{transform:translate(-50%,-50%) scale(1)}
+
+/* CANVAS BG */
+#hero-canvas{position:absolute;inset:0;width:100%;height:100%;opacity:0.35}
+
+/* NAV */
+nav{
+  position:fixed;top:0;left:0;right:0;z-index:1000;
+  display:flex;justify-content:space-between;align-items:center;
+  padding:1.5rem 4rem;
+  mix-blend-mode:normal;
+  transition:background 0.4s ease, backdrop-filter 0.4s ease, padding 0.4s ease, border-bottom 0.4s ease;
+}
+nav.scrolled{
+  background:rgba(0,0,0,0.75);
+  backdrop-filter:blur(18px) saturate(180%);
+  -webkit-backdrop-filter:blur(18px) saturate(180%);
+  border-bottom:1px solid rgba(255,255,255,0.07);
+  padding:1rem 4rem;
+  mix-blend-mode:normal;
+}
+.nav-logo{
+  font-family:'Bebas Neue',sans-serif;
+  font-size:2rem;
+  color:var(--white);
+  letter-spacing:0.15em;
+  text-decoration:none;
+}
+.nav-links{display:flex;gap:2.5rem}
+.nav-links a{
+  color:var(--white);
+  text-decoration:none;
+  font-size:0.75rem;
+  letter-spacing:0.2em;
+  text-transform:uppercase;
+  position:relative;
+  transition:color 0.3s;
+}
+.nav-links a::after{
+  content:'';position:absolute;bottom:-4px;left:0;width:0;height:1px;
+  background:var(--green);transition:width 0.3s;
+}
+.nav-links a:hover{color:var(--green)}
+.nav-links a:hover::after{width:100%}
+
+/* HERO */
+#hero{
+  position:relative;min-height:110vh;
+  display:flex;align-items:center;justify-content:center;
+  overflow:hidden;
+}
+.hero-bg-text{
+  position:absolute;font-family:'Bebas Neue',sans-serif;
+  font-size:clamp(8rem,22vw,22rem);
+  color:transparent;-webkit-text-stroke:1px rgba(255,255,255,0.04);
+  white-space:nowrap;letter-spacing:-0.05em;
+  animation:bgTextDrift 20s linear infinite;
+  user-select:none;
+  top:50%;transform:translateY(-50%);
+}
+@keyframes bgTextDrift{from{left:-20%}to{left:100%}}
+
+.hero-inner{
+  position:relative;z-index:10;
+  display:grid;grid-template-columns:1fr 1fr;
+  align-items:center;gap:4rem;
+  padding:0 4rem;max-width:1400px;margin:0 auto;width:100%;
+}
+.hero-text{animation:heroIn 1s ease both}
+@keyframes heroIn{from{opacity:0;transform:translateX(-60px)}to{opacity:1;transform:none}}
+
+.hero-eyebrow{
+  font-size:0.7rem;letter-spacing:0.4em;text-transform:uppercase;
+  color:var(--green);margin-bottom:1.5rem;
+  animation:blink 2s step-end infinite;
+}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0.3}}
+
+.hero-title{
+  font-family:'Bebas Neue',sans-serif;
+  font-size:clamp(5rem,9vw,6rem);
+  line-height:0.9;letter-spacing:-0.02em;
+  position:relative;
+}
+.glitch{
+  position:relative;display:inline-block;
+  animation:glitchMain 4s infinite;
+}
+.glitch::before,.glitch::after{
+  content:attr(data-text);
+  position:absolute;top:0;left:0;width:100%;height:100%;
+}
+.glitch::before{
+  color:var(--red);clip-path:polygon(0 0, 100% 0, 100% 40%, 0 40%);
+  animation:glitchTop 4s infinite;transform:translate(-3px,0);
+}
+.glitch::after{
+  color:var(--cyan);clip-path:polygon(0 60%, 100% 60%, 100% 100%, 0 100%);
+  animation:glitchBot 4s infinite;transform:translate(3px,0);
+}
+@keyframes glitchMain{
+  0%,90%,100%{transform:none;filter:none}
+  91%{transform:skewX(-2deg);filter:brightness(1.5)}
+  93%{transform:skewX(1deg)}
+  95%{transform:none;filter:hue-rotate(90deg)}
+}
+@keyframes glitchTop{
+  0%,90%,100%{transform:translate(-3px,0);opacity:0}
+  91%{opacity:1;transform:translate(-6px,-2px)}
+  93%{transform:translate(2px,-1px)}
+  95%{opacity:0}
+}
+@keyframes glitchBot{
+  0%,90%,100%{transform:translate(3px,0);opacity:0}
+  91%{opacity:1;transform:translate(6px,2px)}
+  93%{transform:translate(-2px,1px)}
+  95%{opacity:0}
+}
+@keyframes glitchMain{
+  0%,85%,100%{transform:none;filter:none}
+  86%{transform:skewX(-3deg);filter:brightness(1.8)}
+  88%{transform:skewX(2deg)}
+  90%{transform:none;filter:hue-rotate(180deg) saturate(2)}
+  92%{filter:none}
+}
+
+.hero-sub{
+  margin-top:2rem;font-size:1rem;line-height:1.7;
+  color:rgba(255,255,255,0.5);max-width:400px;
+}
+.hero-sub em{font-style:normal;color:var(--yellow)}
+
+.hero-cta-row{display:flex;gap:1.5rem;margin-top:2.5rem;align-items:center}
+.btn-primary{
+  font-family:'DM Mono',monospace;
+  font-size:0.8rem;letter-spacing:0.2em;text-transform:uppercase;
+  padding:1rem 2.5rem;border:none;
+  background:var(--green);color:var(--black);
+  cursor:none;position:relative;overflow:hidden;
+  transition:transform 0.2s,box-shadow 0.3s;
+  clip-path:polygon(0 0, calc(100% - 14px) 0, 100% 14px, 100% 100%, 14px 100%, 0 calc(100% - 14px));
+}
+.btn-primary::after{
+  content:'';position:absolute;inset:0;
+  background:var(--yellow);transform:translateX(-101%);transition:transform 0.3s;
+  clip-path:inherit;
+}
+.btn-primary:hover{transform:scale(1.04);box-shadow:0 0 40px rgba(0,255,136,0.5)}
+.btn-primary:hover::after{transform:translateX(0)}
+.btn-primary span{position:relative;z-index:1}
+
+.btn-ghost{
+  font-family:'DM Mono',monospace;
+  font-size:0.8rem;letter-spacing:0.2em;text-transform:uppercase;
+  padding:1rem 2rem;border:1px solid rgba(0, 255, 115, 0.2);
+  background:transparent;color:var(--white);cursor:none;
+  transition:border-color 0.3s,color 0.3s,box-shadow 0.3s;
+}
+.btn-ghost:hover{border-color:var(--yellow);color:var(#00ff88);box-shadow:0 0 30px rgba(0, 255, 115, 0.2)}
+
+/* HERO VISUAL */
+.hero-visual{
+  display:flex;justify-content:center;align-items:center;
+  animation:heroVisualIn 1.2s 0.3s ease both;
+  position:relative;
+}
+@keyframes heroVisualIn{from{opacity:0;transform:translateX(60px) rotate(-10deg)}to{opacity:1;transform:none}}
+
+.hp-wrapper{
+  position:relative;width:460px;height:460px;
+  animation:hpFloat 5s ease-in-out infinite;
+  display:flex;align-items:center;justify-content:center;
+}
+@keyframes hpFloat{
+  0%,100%{transform:translateY(0) rotate(0deg)}
+  33%{transform:translateY(-18px) rotate(2deg)}
+  66%{transform:translateY(8px) rotate(-1deg)}
+}
+.hp-glow{
+  position:absolute;inset:-40px;
+  background:radial-gradient(ellipse,rgba(0,255,136,0.25) 0%,transparent 70%);
+  animation:glowPulse 3s ease-in-out infinite;
+}
+@keyframes glowPulse{0%,100%{opacity:0.5;transform:scale(1)}50%{opacity:1;transform:scale(1.1)}}
+
+.hp-ring{
+  position:absolute;inset:0;border-radius:50%;
+  border:1px solid rgba(0,255,136,0.2);
+  animation:ringExpand 3s ease-out infinite;
+}
+.hp-ring:nth-child(2){animation-delay:1s}
+.hp-ring:nth-child(3){animation-delay:2s}
+@keyframes ringExpand{
+  0%{transform:scale(0.85);opacity:0.8}
+  100%{transform:scale(1.4);opacity:0}
+}
+#hero-img{
+  width:380px;height:380px;object-fit:contain;
+  position:relative;z-index:2;
+  filter:drop-shadow(0 0 30px rgba(0,255,136,0.5)) drop-shadow(0 0 80px rgba(0,255,136,0.2));
+  animation:imgGlowPulse 3s ease-in-out infinite;
+}
+@keyframes imgGlowPulse{
+  0%,100%{filter:drop-shadow(0 0 30px rgba(0,255,136,0.5)) drop-shadow(0 0 80px rgba(0,255,136,0.2))}
+  50%{filter:drop-shadow(0 0 50px rgba(0,255,136,0.8)) drop-shadow(0 0 120px rgba(0,238,255,0.3))}
+}
+
+/* PRODUCT CARD VISUALS */
+.product-visual{
+  height:240px;display:flex;align-items:center;justify-content:center;
+  position:relative;padding:1.5rem;overflow:hidden;
+}
+.product-visual svg{width:100%;height:100%;transition:transform 0.5s cubic-bezier(0.23,1,0.32,1)}
+.product-card:hover .product-visual svg{transform:scale(1.06)}
+.product-img{
+  width:100%;height:140%;object-fit:contain;
+  transition:transform 0.5s cubic-bezier(0.23,1,0.32,1);
+  filter:drop-shadow(0 0 18px rgba(255,255,255,0.1));
+}
+.product-card:hover .product-img{transform:scale(1.06)}
+.product-card:nth-child(1):hover .product-img{filter:drop-shadow(0 0 24px rgba(255,34,0,0.5))}
+.product-card:nth-child(2):hover .product-img{filter:drop-shadow(0 0 24px rgba(0,255,136,0.5))}
+.product-card:nth-child(3):hover .product-img{filter:drop-shadow(0 0 24px rgba(0,238,255,0.5))}
+
+/* FEATURE ICONS — SVG based */
+.feature-icon{
+  width:48px;height:48px;display:flex;align-items:center;justify-content:center;
+  border:1px solid rgba(255,255,255,0.1);
+  margin-bottom:1.5rem;
+  transition:border-color 0.4s,transform 0.4s,background 0.4s;
+}
+.feature-icon svg{width:22px;height:22px;stroke:rgba(255,255,255,0.7);fill:none;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round;transition:stroke 0.4s}
+.feature-cell:hover .feature-icon{border-color:var(--green);transform:rotate(10deg) scale(1.1);background:rgba(0,255,136,0.05)}
+.feature-cell:hover .feature-icon svg{stroke:var(--green)}
+
+/* MARQUEE */
+.marquee-section{
+  background:var(--yellow);padding:1rem 0;overflow:hidden;
+  border-top:1px solid rgba(0,0,0,0.1);
+}
+.marquee-track{
+  display:flex;gap:3rem;animation:marquee 12s linear infinite;
+  white-space:nowrap;
+}
+.marquee-track span{
+  font-family:'Bebas Neue',sans-serif;
+  font-size:1.5rem;letter-spacing:0.1em;color:var(--black);
+  flex-shrink:0;
+}
+.marquee-dot{color:var(--red)}
+@keyframes marquee{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+
+/* STATS BAR */
+.stats-bar{
+  display:grid;grid-template-columns:repeat(4,1fr);
+  border-top:1px solid rgba(255,255,255,0.08);
+  border-bottom:1px solid rgba(255,255,255,0.08);
+}
+.stat-item{
+  padding:3rem 2rem;text-align:center;
+  border-right:1px solid rgba(255,255,255,0.08);
+  position:relative;overflow:hidden;
+  transition:background 0.4s;
+}
+.stat-item:last-child{border-right:none}
+.stat-item:hover{background:rgba(255,255,255,0.03)}
+.stat-item::before{
+  content:'';position:absolute;bottom:0;left:0;right:0;height:2px;
+  background:var(--green);transform:scaleX(0);transition:transform 0.4s;
+  transform-origin:left;
+}
+.stat-item:hover::before{transform:scaleX(1)}
+.stat-num{
+  font-family:'Bebas Neue',sans-serif;font-size:4rem;line-height:1;
+  background:linear-gradient(135deg,var(--white),rgba(255,255,255,0.5));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+  display:block;
+}
+.stat-label{font-size:0.65rem;letter-spacing:0.3em;text-transform:uppercase;color:rgba(255,255,255,0.4);margin-top:0.5rem}
+
+/* PRODUCTS */
+#products{padding:8rem 4rem;max-width:1400px;margin:0 auto}
+.section-header{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:4rem}
+.section-eyebrow{font-size:0.65rem;letter-spacing:0.4em;text-transform:uppercase;color:var(--pink);margin-bottom:1rem}
+.section-title{
+  font-family:'Bebas Neue',sans-serif;font-size:clamp(3rem,6vw,4rem);
+  line-height:0.9;
+}
+.section-desc{font-size:0.85rem;color:rgba(255,255,255,0.45);max-width:300px;line-height:1.7;text-align:right}
+
+.products-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1.5rem}
+
+.product-card{
+  background:#0a0a0a;border:1px solid rgba(255,255,255,0.07);
+  position:relative;overflow:hidden;cursor:none;
+  transition:transform 0.4s cubic-bezier(0.23,1,0.32,1),border-color 0.4s;
+  transform-style:preserve-3d;
+}
+.product-card::before{
+  content:'';position:absolute;inset:0;
+  background:radial-gradient(ellipse at 50% 0%,rgba(255,255,255,0.05),transparent 70%);
+  opacity:0;transition:opacity 0.4s;
+}
+.product-card:hover::before{opacity:1}
+.product-card:nth-child(1):hover{border-color:var(--red);box-shadow:0 0 60px rgba(255,34,0,0.15)}
+.product-card:nth-child(2):hover{border-color:var(--green);box-shadow:0 0 60px rgba(0,255,136,0.15)}
+.product-card:nth-child(3):hover{border-color:var(--cyan);box-shadow:0 0 60px rgba(0,238,255,0.15)}
+
+.product-badge{
+  position:absolute;top:1.5rem;left:1.5rem;z-index:10;
+  font-size:0.7rem;letter-spacing:0.25em;text-transform:uppercase; font-weight : bold;
+  padding:0.35rem 0.75rem;
+}
+.badge-new{background:var(--red);color:var(--black)}
+.badge-hot{background:var(--green);color:var(--black)}
+.badge-limited{background:var(--cyan);color:var(--black)}
+
+
+
+.product-info{padding:0 1.75rem 2rem}
+.product-model{font-size:0.6rem;letter-spacing:0.3em;text-transform:uppercase;color:rgba(255,255,255,0.35);margin-bottom:0.5rem}
+.product-name{font-family:'Bebas Neue',sans-serif;font-size:2.2rem;letter-spacing:0.02em;line-height:1}
+.product-desc{font-size:0.8rem;color:rgba(255,255,255,0.45);line-height:1.6;margin-top:0.75rem}
+.product-footer{display:flex;justify-content:space-between;align-items:center;margin-top:1.75rem}
+.product-price{font-family:'Bebas Neue',sans-serif;font-size:2rem;letter-spacing:0.05em}
+.product-price .currency{font-size:1rem;vertical-align:super;margin-right:2px;opacity:0.6}
+.add-btn{
+  width:42px;height:42px;border:1px solid rgba(255,255,255,0.2);
+  background:transparent;color:var(--white);cursor:none;
+  display:flex;align-items:center;justify-content:center;
+  font-size:1.3rem;transition:background 0.3s,border-color 0.3s,transform 0.2s;
+  position:relative;overflow:hidden;
+}
+.product-card:nth-child(1) .add-btn:hover{background:var(--red);border-color:var(--red);transform:scale(1.1) rotate(90deg)}
+.product-card:nth-child(2) .add-btn:hover{background:var(--green);border-color:var(--green);color:var(--black);transform:scale(1.1) rotate(90deg)}
+.product-card:nth-child(3) .add-btn:hover{background:var(--cyan);border-color:var(--cyan);color:var(--black);transform:scale(1.1) rotate(90deg)}
+
+/* SOUND WAVE SECTION */
+#wave-section{
+  padding:6rem 0;overflow:hidden;
+  background:#050505;
+  border-top:1px solid rgba(255,255,255,0.05);
+  border-bottom:1px solid rgba(255,255,255,0.05);
+}
+.wave-inner{max-width:1400px;margin:0 auto;padding:0 4rem;display:grid;grid-template-columns:1fr 1fr;gap:6rem;align-items:center}
+.wave-text .section-eyebrow{color:var(--cyan)}
+.wave-desc{font-size:0.9rem;color:rgba(255,255,255,0.45);line-height:1.8;margin-top:1.5rem;max-width:440px}
+.wave-specs{margin-top:2.5rem;display:flex;flex-direction:column;gap:1rem}
+.spec-row{display:flex;align-items:center;gap:1rem}
+.spec-bar-wrap{flex:1;height:2px;background:rgba(255,255,255,0.1);position:relative}
+.spec-bar{height:100%;background:var(--cyan);transform-origin:left;transform:scaleX(0);transition:transform 1.2s cubic-bezier(0.23,1,0.32,1)}
+.spec-row.visible .spec-bar{transform:scaleX(1)}
+.spec-name{font-size:0.65rem;letter-spacing:0.2em;text-transform:uppercase;color:rgba(255,255,255,0.4);min-width:90px}
+.spec-val{font-size:0.75rem;color:var(--white);min-width:50px;text-align:right}
+
+.wave-visual{display:flex;align-items:center;justify-content:center;gap:4px}
+.wave-bar{
+  width:6px;border-radius:3px;
+  background:linear-gradient(to top,var(--pink),var(--cyan));
+  animation:waveAnim 1s ease-in-out infinite alternate;
+}
+.wave-bar:nth-child(1){animation-delay:0s}
+.wave-bar:nth-child(2){animation-delay:0.05s}
+.wave-bar:nth-child(3){animation-delay:0.1s}
+.wave-bar:nth-child(4){animation-delay:0.15s}
+.wave-bar:nth-child(5){animation-delay:0.2s}
+.wave-bar:nth-child(6){animation-delay:0.25s}
+.wave-bar:nth-child(7){animation-delay:0.3s}
+.wave-bar:nth-child(8){animation-delay:0.35s}
+.wave-bar:nth-child(9){animation-delay:0.4s}
+.wave-bar:nth-child(10){animation-delay:0.45s}
+.wave-bar:nth-child(11){animation-delay:0.4s}
+.wave-bar:nth-child(12){animation-delay:0.35s}
+.wave-bar:nth-child(13){animation-delay:0.3s}
+.wave-bar:nth-child(14){animation-delay:0.25s}
+.wave-bar:nth-child(15){animation-delay:0.2s}
+.wave-bar:nth-child(16){animation-delay:0.15s}
+.wave-bar:nth-child(17){animation-delay:0.1s}
+.wave-bar:nth-child(18){animation-delay:0.05s}
+.wave-bar:nth-child(19){animation-delay:0s}
+@keyframes waveAnim{
+  from{height:8px;opacity:0.3}
+  to{height:var(--h,80px);opacity:1}
+}
+
+/* FEATURES */
+#features{padding:8rem 4rem;max-width:1400px;margin:0 auto}
+.features-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:rgba(255,255,255,0.06);margin-top:4rem;border:1px solid rgba(255,255,255,0.06)}
+.feature-cell{
+  background:var(--black);padding:2.5rem;
+  position:relative;overflow:hidden;transition:background 0.4s;
+}
+.feature-cell::after{
+  content:'';position:absolute;top:0;left:0;width:100%;height:1px;
+  background:var(--green);transform:scaleX(0);transform-origin:left;
+  transition:transform 0.5s cubic-bezier(0.23,1,0.32,1);
+}
+.feature-cell:hover{background:#080808}
+.feature-cell:hover::after{transform:scaleX(1)}
+
+.feature-name{font-family:'Bebas Neue',sans-serif;font-size:1.5rem;letter-spacing:0.05em;margin-bottom:0.75rem}
+.feature-text{font-size:0.8rem;color:rgba(255,255,255,0.4);line-height:1.7}
+
+/* EXPLOSIVE CTA */
+#cta{
+  position:relative;padding:10rem 4rem;text-align:center;overflow:hidden;
+}
+#cta::before{
+  content:'';position:absolute;inset:0;
+  background:radial-gradient(ellipse at 50% 50%,rgba(255,0,204,0.15) 0%,rgba(0,0,0,0) 60%);
+  animation:ctaPulse 4s ease-in-out infinite;
+}
+@keyframes ctaPulse{
+  0%,100%{transform:scale(1);opacity:0.7}
+  50%{transform:scale(1.15);opacity:1}
+}
+/* .cta-grid-bg{
+  position:absolute;inset:0;
+  background-image:linear-gradient(rgba(51, 253, 1, 0.03) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(0, 255, 17, 0.03) 1px,transparent 1px);
+  background-size:60px 60px;
+  animation:gridShift 10s linear infinite;
+}
+@keyframes gridShift{from{background-position:0 0}to{background-position:60px 60px}} */
+
+.cta-grid-bg{
+  position: absolute;
+  inset: 0;
+
+  /* Main dark green background */
+  background:
+    radial-gradient(circle at center,
+      rgba(0, 255, 120, 0.12) 0%,
+      rgba(0, 255, 120, 0.05) 25%,
+      rgba(0, 0, 0, 0.95) 70%),
+
+    linear-gradient(rgba(0,255,120,0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0,255,120,0.05) 1px, transparent 1px);
+
+  background-size: cover, 60px 60px, 60px 60px;
+
+  animation: gridShift 10s linear infinite;
+}
+
+@keyframes gridShift{
+  from{
+    background-position: center, 0 0, 0 0;
+  }
+  to{
+    background-position: center, 60px 60px, 60px 60px;
+  }
+}
+
+.cta-inner{position:relative;z-index:10}
+.cta-title{
+  font-family:'Bebas Neue',sans-serif;
+  font-size:clamp(4rem,10vw,12rem);
+  line-height:0.85;letter-spacing:-0.02em;
+  background:linear-gradient(135deg,var(--white) 0%,var(--green) 40%,var(--green) 100%);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+  animation:ctaGradShift 5s ease-in-out infinite alternate;
+}
+@keyframes ctaGradShift{
+  from{filter:hue-rotate(0deg)}
+  to{filter:hue-rotate(40deg)}
+}
+.cta-sub{font-size:1rem;color:rgba(255, 255, 255, 0.4);margin:2rem auto;max-width:500px;line-height:1.7}
+.cta-btn{
+  display:inline-block;font-family:'Bebas Neue',sans-serif;
+  font-size:2rem;letter-spacing:0.15em;
+  padding:1.5rem 5rem;
+  background:var(--white);color:var(--black);
+  cursor:none;position:relative;overflow:hidden;
+  transition:transform 0.3s,box-shadow 0.4s;
+  clip-path:polygon(0 0,calc(100% - 20px) 0,100% 20px,100% 100%,20px 100%,0 calc(100% - 20px));
+  animation:ctaBtnPulse 2s ease-in-out infinite;
+}
+@keyframes ctaBtnPulse{
+  0%,100%{box-shadow:0 0 0 rgba(0, 255, 64, 0)}
+  50%{box-shadow:0 0 60px rgba(255,255,255,0.3),0 0 120px rgba(255,0,204,0.2)}
+}
+.cta-btn::before{
+  content:'';position:absolute;inset:0;
+  background:linear-gradient(135deg,var(--yellow),var(--green));
+  transform:translateX(-101%);transition:transform 0.4s;
+}
+.cta-btn:hover{transform:scale(1.05)}
+.cta-btn:hover::before{transform:translateX(0)}
+.cta-btn span{position:relative;z-index:1}
+
+/* FOOTER */
+footer{
+  border-top:1px solid rgba(255,255,255,0.07);
+  padding:4rem;
+  display:flex;justify-content:space-between;align-items:center;
+}
+.footer-logo{font-family:'Bebas Neue',sans-serif;font-size:3rem;letter-spacing:0.1em;color:rgba(255,255,255,0.1)}
+.footer-copy{font-size:0.65rem;letter-spacing:0.2em;color:rgba(255,255,255,0.2)}
+.footer-links{display:flex;gap:2rem}
+.footer-links a{font-size:0.65rem;letter-spacing:0.2em;text-transform:uppercase;color:rgba(255,255,255,0.25);text-decoration:none;transition:color 0.3s}
+.footer-links a:hover{color:var(--green)}
+
+/* SCROLL REVEAL */
+.reveal{opacity:0;transform:translateY(40px);transition:opacity 0.8s cubic-bezier(0.23,1,0.32,1),transform 0.8s cubic-bezier(0.23,1,0.32,1)}
+.reveal.visible{opacity:1;transform:none}
+.reveal-left{opacity:0;transform:translateX(-50px);transition:opacity 0.8s cubic-bezier(0.23,1,0.32,1),transform 0.8s cubic-bezier(0.23,1,0.32,1)}
+.reveal-left.visible{opacity:1;transform:none}
+.reveal-right{opacity:0;transform:translateX(50px);transition:opacity 0.8s cubic-bezier(0.23,1,0.32,1),transform 0.8s cubic-bezier(0.23,1,0.32,1)}
+.reveal-right.visible{opacity:1;transform:none}
+
+/* NOISE OVERLAY */
+body::after{
+  content:'';position:fixed;inset:0;pointer-events:none;z-index:9997;
+  background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+  opacity:0.04;
+}
+</style>
+</head>
+<body>
+
+<div id="cursor"></div>
+<div id="cursor-trail"></div>
+
+<nav>
+  <a class="nav-logo" href="#">OVR<span style="color:var(--green)">_</span>SOUND</a>
+  <div class="nav-links">
+    <a href="#products">Products</a>
+    <a href="#features">Tech</a>
+    <a href="#cta">Shop</a>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section id="hero">
+  <canvas id="hero-canvas"></canvas>
+  <div class="hero-bg-text">OVRSOUND&nbsp;&nbsp;OVRSOUND&nbsp;&nbsp;OVRSOUND&nbsp;&nbsp;</div>
+  <div class="hero-inner">
+    <div class="hero-text">
+      <p class="hero-eyebrow">▶ New Era of Sound — 2026</p>
+      <h1 class="hero-title">
+        <span class="glitch" data-text="BREAK">BREAK</span><br>
+        <span style="color:var(--green)">THE</span><br>
+        <span class="glitch" data-text="SILENCE">SILENCE</span>
+      </h1>
+      <p class="hero-sub">Not just headphones. A <em>sensory takeover</em>. 
+        Engineered for those who hear the universe differently.</p>
+      <div class="hero-cta-row">
+        <button class="btn-primary"><span>Shop Now →</span></button>
+        <button class="btn-ghost">Watch Drop</button>
+      </div>
+    </div>
+    <div class="hero-visual">
+      <div class="hp-wrapper">
+        <div class="hp-glow"></div>
+        <div class="hp-ring"></div>
+        <div class="hp-ring"></div>
+        <div class="hp-ring"></div>
+        <img src="Mask group.png" id="hero-img" alt="OVR Sound Headphones">
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- MARQUEE -->
+<div class="marquee-section">
+  <div class="marquee-track" id="marquee">
+    <span>OVRSOUND <span class="marquee-dot">✦</span></span>
+    <span>ZERO LATENCY <span class="marquee-dot">✦</span></span>
+    <span>40H BATTERY <span class="marquee-dot">✦</span></span>
+    <span>SPATIAL AUDIO <span class="marquee-dot">✦</span></span>
+    <span>BREAK REALITY <span class="marquee-dot">✦</span></span>
+    <span>OVRSOUND <span class="marquee-dot">✦</span></span>
+    <span>ZERO LATENCY <span class="marquee-dot">✦</span></span>
+    <span>40H BATTERY <span class="marquee-dot">✦</span></span>
+    <span>SPATIAL AUDIO <span class="marquee-dot">✦</span></span>
+    <span>BREAK REALITY <span class="marquee-dot">✦</span></span>
+  </div>
+</div>
+
+<!-- STATS -->
+<div class="stats-bar">
+  <div class="stat-item reveal"><span class="stat-num" data-target="40">0</span><span class="stat-label">Hours Battery</span></div>
+  <div class="stat-item reveal" style="transition-delay:0.1s"><span class="stat-num" data-target="2">0</span><span class="stat-label">ms Latency</span></div>
+  <div class="stat-item reveal" style="transition-delay:0.2s"><span class="stat-num" data-target="99">0</span><span class="stat-label">% Noise Cancel</span></div>
+  <div class="stat-item reveal" style="transition-delay:0.3s"><span class="stat-num" data-target="360">0</span><span class="stat-label">° Spatial Sound</span></div>
+</div>
+
+<!-- PRODUCTS -->
+<section id="products">
+  <div class="section-header reveal">
+    <div>
+      <p class="section-eyebrow">▶ The Collection</p>
+      <h2 class="section-title">CHOOSE YOUR WEAPON</h2>
+    </div>
+    <p class="section-desc">Three tiers of auditory destruction. Pick the one that matches your frequency.</p>
+  </div>
+  <div class="products-grid">
+    <!-- Card 1 -->
+    <div class="product-card reveal">
+      <span class="product-badge badge-new">New Drop</span>
+      <div class="product-visual">
+        <img src="Headphones_01.png" class="product-img" alt="Nova Red Headphones">
+      </div>
+      <div class="product-info">
+        <p class="product-model">Model OVR-001</p>
+        <h3 class="product-name">NOVA RED</h3>
+        <p class="product-desc">40mm drivers. Raw power. Uncompromised bass that rattles dimensions.</p>
+        <div class="product-footer">
+          <div class="product-price"><span class="currency">$</span>249</div>
+          <button class="add-btn">+</button>
+        </div>
+      </div>
+    </div>
+    <!-- Card 2 -->
+    <div class="product-card reveal" style="transition-delay:0.15s">
+      <span class="product-badge badge-hot">Bestseller</span>
+      <div class="product-visual">
+        <img src="Headphones_2.png" class="product-img" alt="Matrix Green Headphones">
+      </div>
+      <div class="product-info">
+        <p class="product-model">Model OVR-002</p>
+        <h3 class="product-name">MATRIX GREEN</h3>
+        <p class="product-desc">Neural sync. ANC so deep you'll forget the planet exists.</p>
+        <div class="product-footer">
+          <div class="product-price"><span class="currency">$</span>349</div>
+          <button class="add-btn">+</button>
+        </div>
+      </div>
+    </div>
+    <!-- Card 3 -->
+    <div class="product-card reveal" style="transition-delay:0.3s">
+      <span class="product-badge badge-limited">Limited</span>
+      <div class="product-visual">
+        <img src="Headphones_3.png" class="product-img" alt="Cryo Cyan Headphones">
+      </div>
+      <div class="product-info">
+        <p class="product-model">Model OVR-003</p>
+        <h3 class="product-name">CRYO CYAN</h3>
+        <p class="product-desc">The pinnacle. Spatial audio that wraps around your skull like the cosmos.</p>
+        <div class="product-footer">
+          <div class="product-price"><span class="currency">$</span>499</div>
+          <button class="add-btn">+</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- WAVE SECTION -->
+<section id="wave-section">
+  <div class="wave-inner">
+    <div class="wave-text reveal-left">
+      <p class="section-eyebrow">▶ Acoustic Engineering</p>
+      <h2 class="section-title" style="font-size:clamp(3rem,5vw,3rem)">SOUND SCIENCE</h2>
+      <p class="wave-desc">Every driver tuned by obsessive engineers who refuse to sleep. 
+        Frequency response flatter than your ex's personality.</p>
+      <div class="wave-specs">
+        <div class="spec-row"><span class="spec-name">Bass</span><div class="spec-bar-wrap"><div class="spec-bar" style="--w:0.97"></div></div><span class="spec-val">97%</span></div>
+        <div class="spec-row"><span class="spec-name">Mids</span><div class="spec-bar-wrap"><div class="spec-bar" style="--w:0.91;background:var(--yellow)"></div></div><span class="spec-val">91%</span></div>
+        <div class="spec-row"><span class="spec-name">Treble</span><div class="spec-bar-wrap"><div class="spec-bar" style="--w:0.89;background:var(--pink)"></div></div><span class="spec-val">89%</span></div>
+        <div class="spec-row"><span class="spec-name">ANC</span><div class="spec-bar-wrap"><div class="spec-bar" style="--w:0.99;background:var(--red)"></div></div><span class="spec-val">99%</span></div>
+      </div>
+    </div>
+    <div class="wave-visual reveal-right" id="waveViz">
+      <!-- JS will populate bars -->
+    </div>
+  </div>
+</section>
+
+<!-- FEATURES -->
+<section id="features">
+  <div class="section-header reveal">
+    <div>
+      <p class="section-eyebrow">▶ What's Inside</p>
+      <h2 class="section-title">BUILT DIFFERENT</h2>
+    </div>
+  </div>
+  <div class="features-grid">
+    <div class="feature-cell reveal">
+      <div class="feature-icon">
+        <svg viewBox="0 0 24 24"><polyline points="13 2 13 9 20 9"/><polygon points="22 2 13 11 2 11 2 13 13 13 22 22"/></svg>
+      </div>
+      <h3 class="feature-name">2ms Latency</h3>
+      <p class="feature-text">So fast your brain thinks it's lying to itself. Real-time audio with zero perceptible lag.</p>
+    </div>
+    <div class="feature-cell reveal" style="transition-delay:0.1s">
+      <div class="feature-icon">
+        <svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9 12l2 2 4-4"/></svg>
+      </div>
+      <h3 class="feature-name">Adaptive ANC</h3>
+      <p class="feature-text">AI noise cancellation that listens to your environment 800 times per second and destroys it.</p>
+    </div>
+    <div class="feature-cell reveal" style="transition-delay:0.2s">
+      <div class="feature-icon">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><ellipse cx="12" cy="12" rx="10" ry="4" transform="rotate(0 12 12)"/><ellipse cx="12" cy="12" rx="4" ry="10"/><line x1="2" y1="12" x2="22" y2="12"/></svg>
+      </div>
+      <h3 class="feature-name">Spatial 360°</h3>
+      <p class="feature-text">Sound that exists around you, not just in you. Head-tracked 3D audio for maximum immersion.</p>
+    </div>
+    <div class="feature-cell reveal" style="transition-delay:0.1s">
+      <div class="feature-icon">
+        <svg viewBox="0 0 24 24"><rect x="6" y="2" width="12" height="20" rx="2"/><line x1="10" y1="2" x2="10" y2="6"/><line x1="14" y1="2" x2="14" y2="6"/><rect x="8" y="8" width="8" height="8" rx="1"/><line x1="12" y1="16" x2="12" y2="22"/></svg>
+      </div>
+      <h3 class="feature-name">40H Battery</h3>
+      <p class="feature-text">Outlasts your attention span by a factor of infinity. 15-min charge gives 6 hours.</p>
+    </div>
+    <div class="feature-cell reveal" style="transition-delay:0.2s">
+      <div class="feature-icon">
+        <svg viewBox="0 0 24 24"><path d="M12 2 C8 7 4 9 4 13a8 8 0 0 0 16 0c0-4-4-6-8-11z"/><path d="M9 17.5a3.5 3.5 0 0 0 6 0"/></svg>
+      </div>
+      <h3 class="feature-name">IPX5 Rated</h3>
+      <p class="feature-text">Sweat it out, get caught in rain, cry listening to your playlist — it handles all of it.</p>
+    </div>
+    <div class="feature-cell reveal" style="transition-delay:0.3s">
+      <div class="feature-icon">
+        <svg viewBox="0 0 24 24"><polyline points="6.5 6.5 17.5 17.5"/><polyline points="17.5 6.5 6.5 17.5"/><polyline points="12 3 18 7.5 12 12"/><polyline points="12 12 18 16.5 12 21"/><line x1="6" y1="7.5" x2="12" y2="3"/><line x1="6" y1="16.5" x2="12" y2="12"/></svg>
+      </div>
+      <h3 class="feature-name">Multipoint BT</h3>
+      <p class="feature-text">Connect to 3 devices simultaneously. Laptop, phone, tablet — all handled without drama.</p>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section id="cta">
+  <div class="cta-grid-bg"></div>
+  <div class="cta-inner reveal">
+    <h2 class="cta-title">YOUR EARS DESERVE THIS</h2>
+    <p class="cta-sub">Free shipping worldwide. 60-day returns. No questions. No excuses. Just sound.</p>
+    <br><br>
+    <button class="cta-btn"><span>SHOP THE COLLECTION →</span></button>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-logo">OVR_SOUND</div>
+  <div class="footer-links">
+    <a href="#">Privacy</a>
+    <a href="#">Terms</a>
+    <a href="#">Contact</a>
+    <a href="#">Instagram</a>
+  </div>
+  <p class="footer-copy">© 2026 OVRSOUND. ALL FREQUENCIES RESERVED.</p>
+</footer>
+
+<script>
+// CURSOR
+const cursor=document.getElementById('cursor');
+const trail=document.getElementById('cursor-trail');
+let mx=0,my=0;
+document.addEventListener('mousemove',e=>{
+  mx=e.clientX;my=e.clientY;
+  cursor.style.left=mx+'px';cursor.style.top=my+'px';
+  setTimeout(()=>{trail.style.left=mx+'px';trail.style.top=my+'px';},80);
+});
+document.querySelectorAll('button,a').forEach(el=>{
+  el.addEventListener('mouseenter',()=>{cursor.style.transform='translate(-50%,-50%) scale(2.5)';cursor.style.background='var(--yellow)'});
+  el.addEventListener('mouseleave',()=>{cursor.style.transform='translate(-50%,-50%) scale(1)';cursor.style.background='var(--green)'});
+});
+
+// HERO CANVAS particles
+const canvas=document.getElementById('hero-canvas');
+const ctx=canvas.getContext('2d');
+let W,H,particles=[];
+function resize(){W=canvas.width=canvas.offsetWidth;H=canvas.height=canvas.offsetHeight}
+resize();window.addEventListener('resize',()=>{resize();init()});
+function Particle(){
+  this.x=Math.random()*W;this.y=Math.random()*H;
+  this.vx=(Math.random()-0.5)*0.4;this.vy=(Math.random()-0.5)*0.4;
+  this.size=Math.random()*1.5+0.5;
+  this.alpha=Math.random()*0.5+0.1;
+  this.color=Math.random()>0.6?'#00FF88':Math.random()>0.5?'#FF2200':'#ffffff';
+}
+function init(){particles=[];for(let i=0;i<120;i++)particles.push(new Particle())}
+init();
+function draw(){
+  ctx.clearRect(0,0,W,H);
+  particles.forEach(p=>{
+    p.x+=p.vx;p.y+=p.vy;
+    if(p.x<0)p.x=W;if(p.x>W)p.x=0;
+    if(p.y<0)p.y=H;if(p.y>H)p.y=0;
+    ctx.beginPath();ctx.arc(p.x,p.y,p.size,0,Math.PI*2);
+    ctx.fillStyle=p.color;ctx.globalAlpha=p.alpha;ctx.fill();
+    // connect nearby particles
+    particles.forEach(q=>{
+      const d=Math.hypot(p.x-q.x,p.y-q.y);
+      if(d<100&&d>0){
+        ctx.beginPath();ctx.moveTo(p.x,p.y);ctx.lineTo(q.x,q.y);
+        ctx.strokeStyle=p.color;ctx.globalAlpha=0.04*(1-d/100);
+        ctx.lineWidth=0.5;ctx.stroke();
+      }
+    });
+    ctx.globalAlpha=1;
+  });
+  requestAnimationFrame(draw);
+}
+draw();
+
+// WAVE BARS
+const waveViz=document.getElementById('waveViz');
+const heights=[20,35,55,80,110,140,160,150,130,100,70,50,130,150,110,80,55,35,20];
+heights.forEach((h,i)=>{
+  const bar=document.createElement('div');
+  bar.className='wave-bar';
+  bar.style.cssText=`--h:${h}px;width:7px;border-radius:4px;height:8px;background:linear-gradient(to top,var(--pink),var(--cyan));animation:waveAnim 1s ${i*0.05}s ease-in-out infinite alternate;`;
+  waveViz.appendChild(bar);
+});
+
+// SCROLL REVEAL
+const io=new IntersectionObserver((entries)=>{
+  entries.forEach(e=>{
+    if(e.isIntersecting){
+      e.target.classList.add('visible');
+      // count up numbers
+      if(e.target.querySelector('[data-target]')){
+        e.target.querySelectorAll('[data-target]').forEach(el=>{
+          const target=+el.dataset.target;let c=0;
+          const inc=target/60;
+          const t=setInterval(()=>{
+            c+=inc;if(c>=target){c=target;clearInterval(t)}
+            el.textContent=Math.round(c)+(el.dataset.suffix||'');
+          },16);
+        });
+      }
+      // spec bars
+      e.target.querySelectorAll&&e.target.querySelectorAll('.spec-row').forEach(r=>r.classList.add('visible'));
+    }
+  });
+},{threshold:0.15});
+document.querySelectorAll('.reveal,.reveal-left,.reveal-right,.stats-bar .stat-item').forEach(el=>io.observe(el));
+
+// SPEC BAR OBSERVER
+const specIo=new IntersectionObserver((entries)=>{
+  entries.forEach(e=>{if(e.isIntersecting)e.target.classList.add('visible')});
+},{threshold:0.5});
+document.querySelectorAll('.spec-row').forEach(el=>specIo.observe(el));
+
+// 3D TILT on product cards
+document.querySelectorAll('.product-card').forEach(card=>{
+  card.addEventListener('mousemove',e=>{
+    const r=card.getBoundingClientRect();
+    const x=((e.clientX-r.left)/r.width-0.5)*16;
+    const y=((e.clientY-r.top)/r.height-0.5)*-16;
+    card.style.transform=`perspective(800px) rotateY(${x}deg) rotateX(${y}deg) scale(1.02)`;
+  });
+  card.addEventListener('mouseleave',()=>{card.style.transform='none'});
+});
+
+// MARQUEE speed variation + NAV background on scroll
+const navEl=document.querySelector('nav');
+let scrollY=0;
+window.addEventListener('scroll',()=>{
+  scrollY=window.scrollY;
+  const speed=Math.max(6,12-scrollY/200);
+  document.querySelector('.marquee-track').style.animationDuration=speed+'s';
+  if(scrollY>60){navEl.classList.add('scrolled')}else{navEl.classList.remove('scrolled')}
+});
+</script>
+</body>
+</html>
